@@ -1,0 +1,18 @@
+SONS & MUSIQUE — où placer les fichiers
+========================================
+
+Le jeu cherche maintenant les sons dans DEUX endroits :
+  - neon_dodge/assets/
+  - neon_dodge/assets/sounds/
+
+Tu peux donc laisser tes fichiers dans assets/sounds/ (comme tu les as déjà),
+ça fonctionnera.
+
+Fichiers attendus :
+  Effets : attack.wav, teleport.wav, levelup.wav, boss.wav, laser.wav
+           (hit, collect, boom, shield sont générés automatiquement si absents)
+  Musique : music.ogg       -> fond pendant les combats normaux ET le magasin
+            boss_fight.ogg   -> uniquement pendant les combats de boss
+
+Les deux musiques tournent EN BOUCLE.
+Si un fichier manque, le jeu l'écrit UNE seule fois dans la console (plus de spam).

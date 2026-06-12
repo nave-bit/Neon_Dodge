@@ -1,0 +1,76 @@
+{
+  "keys": {
+    "left": 113,
+    "right": 100,
+    "up": 122,
+    "down": 115,
+    "attack": -1,
+    "item1": 101,
+    "item2": 114,
+    "item3": 116,
+    "item4": 102,
+    "item5": 103
+  },
+  "boss_history": {
+    "lazerrrr1": {
+      "seen": 1,
+      "defeated": 1
+    }
+  },
+  "hiscore": 36355,
+  "hiscore_hardcore": 70258,
+  "run_history": {
+    "hardcore": {
+      "last": {
+        "score": 70258,
+        "rounds": 14,
+        "level": 22,
+        "bosses": 1,
+        "date": "12/06 10:48"
+      },
+      "best": [
+        {
+          "score": 70258,
+          "rounds": 14,
+          "level": 22,
+          "bosses": 1,
+          "date": "12/06 10:48"
+        }
+      ]
+    },
+    "rush": {
+      "last": {
+        "score": 36355,
+        "rounds": 7,
+        "level": 11,
+        "bosses": 0,
+        "date": "12/06 13:35"
+      },
+      "best": [
+        {
+          "score": 36355,
+          "rounds": 7,
+          "level": 11,
+          "bosses": 0,
+          "date": "12/06 13:35"
+        }
+      ]
+    }
+  },
+  "owned_skins": [
+    "cyan",
+    "white"
+  ],
+  "selected_skin": "white",
+  "skin_coins": 485,
+  "music_settings": {
+    "mode": "playlist",
+    "shuffle": true,
+    "selected": [
+      "music_chill.ogg",
+      "music_teckno.ogg"
+    ],
+    "resume": true,
+    "allow_interrupt": true
+  }
+}

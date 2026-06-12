@@ -1,0 +1,28 @@
+NEON DODGE — correction du bug de lancement
+============================================
+
+PROBLEME (image cmd) :
+  ModuleNotFoundError: No module named 'constants'
+  -> venait de screens/boss_mode.py qui importait sans prefixe de dossier :
+        from constants import ...
+        from hud import ...
+        from boss import ...
+
+CORRECTION :
+  Mis a la meme convention que TOUS les autres fichiers du projet :
+        from core.constants import ...
+        from systems.hud import ...
+        from entities.boss import ...
+
+STRUCTURE ATTENDUE (a respecter dans ton dossier neon_dodge) :
+  neon_dodge/
+    main.py
+    lancer.bat
+    assets/        <- tes sons (attack.wav, laser.wav, music.ogg, ...)
+    core/          constants.py  save_manager.py  sound_manager.py  recorder.py  __init__.py
+    systems/       xp_system.py  hud.py  shop.py  __init__.py
+    entities/      player.py  obstacle.py  pickup.py  particles.py  boss.py  __init__.py
+    screens/       title.py  transition.py  gameover.py  boss_mode.py  __init__.py
+    save/          neon_save.json
+
+ATTENTION : remets ton dossier assets/ (les sons) dedans, je ne l'avais pas.
