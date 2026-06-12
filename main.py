@@ -618,6 +618,7 @@ def _on_boss_defeated(boss,coins,score,floats,stats=None):
     # Animation spectaculaire (une seule fois)
     if not getattr(boss, "_death_played", False):
         boss._death_played = True
+        snd.play("boss_killed")
         boss_death_animation(screen, clock, boss.bx, boss.by,
                              boss.color, boss.name, FONTS, recorder)
     floats.append(FloatText(W//2,H//3,"BOSS VAINCU ! +200¢  +500pts",GOLD))
