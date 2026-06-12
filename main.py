@@ -348,7 +348,7 @@ def run_round(round_num:int, lives:float, coins:float, inv:dict,
 
         # Spawn
         if not (boss and boss.alive):
-            rate=max(6,32-round_num*2-(score//500))
+            rate=max(12,50-round_num*2-(score//500))
             if spawn_cd<=0:
                 obstacles.append(Obstacle(round_num,slow_f,forbidden_projs,xp_sys.level))
                 spawn_cd=rate+random.randint(-4,4)
@@ -937,7 +937,6 @@ def main():
         if mode == "boss":
             bid, bdiff, current_bg = screen_boss_mode(screen, clock, FONTS, SAVE, current_bg)
             if bid is None: continue
-            xp_sys = XPSystem(); atk_sys = AttackSystem()
             # Budget d'équipement dégressif selon la difficulté
             BUDGET = {
                 "basic":      (1200, 4000),
@@ -947,25 +946,57 @@ def main():
                 "cauchemar":  (250,  800),
             }
             bcoins, bxp = BUDGET.get(bdiff, (1200, 4000))
-            coins = bcoins
-            xp_sys.upgrade_xp = bxp        # XP dépensable en boutique
-            xp_sys.total_xp_ever = bxp     # pour débloquer les armes
-            inv = {}; lives = 5.0
-            stats = {"attacks":0,"items_used":0,"items_collected":0,"rounds":0,"bosses_defeated":[]}
-            # Phase d'équipement (réutilise la boutique) avant le combat
-            snd.play_music("shop")
-            coins,lives,inv,current_bg,atk_sys = run_shop(
-                coins,lives,inv,xp_sys,False,FONTS,False,stats,current_bg,atk_sys
-            )
-            snd.play_music("boss")
-            rs,lives,_,inv,xp_sys,survived,stats,atk_sys = run_round(
-                1,lives,coins,inv,xp_sys,False,False,stats,atk_sys,
-                boss_mode_id=bid, boss_difficulty=bdiff, play_time=play_time
-            )
-            # Enregistrer la victoire avec sa difficulté dans l'historique
-            if survived:
-                _record_boss_win(bid, bdiff)
-            _boss_mode_result_screen(bid, bdiff, rs)
+
+            # phase: "equip" = passe par la boutique, "fight" = combat direct (relance)
+            phase = "equip"
+            saved_loadout = None   # (atk_sys, inv, coins, lives) pour relancer à l'identique
+
+            while True:
+                if phase == "equip":
+                    xp_sys = XPSystem(); atk_sys = AttackSystem()
+                    coins = bcoins
+                    xp_sys.upgrade_xp = bxp        # XP dépensable en boutique
+                    xp_sys.total_xp_ever = bxp     # pour débloquer les armes
+                    inv = {}; lives = 5.0
+                    stats = {"attacks":0,"items_used":0,"items_collected":0,"rounds":0,"bosses_defeated":[]}
+                    # Phase d'équipement (réutilise la boutique) avant le combat
+                    snd.play_music("shop")
+                    coins,lives,inv,current_bg,atk_sys = run_shop(
+                        coins,lives,inv,xp_sys,False,FONTS,False,stats,current_bg,atk_sys
+                    )
+                    # mémorise les conditions exactes pour une éventuelle relance
+                    import copy
+                    saved_loadout = (copy.deepcopy(atk_sys), dict(inv), coins, lives)
+                else:  # phase == "fight" (relance dans les mêmes conditions)
+                    import copy
+                    src_atk, src_inv, src_coins, src_lives = saved_loadout
+                    xp_sys = XPSystem()
+                    xp_sys.upgrade_xp = bxp; xp_sys.total_xp_ever = bxp
+                    atk_sys = copy.deepcopy(src_atk)
+                    inv = dict(src_inv); coins = src_coins; lives = src_lives
+                    stats = {"attacks":0,"items_used":0,"items_collected":0,"rounds":0,"bosses_defeated":[]}
+
+                snd.play_music("boss")
+                rs,lives,_,inv,xp_sys,survived,stats,atk_sys = run_round(
+                    1,lives,coins,inv,xp_sys,False,False,stats,atk_sys,
+                    boss_mode_id=bid, boss_difficulty=bdiff, play_time=play_time
+                )
+
+                if survived:
+                    _record_boss_win(bid, bdiff)
+                    _boss_mode_result_screen(bid, bdiff, rs)
+                    break
+
+                # Défaite → propose relancer / équipement / fuir
+                snd.stop_music()
+                action = _boss_mode_defeat_screen(bid, bdiff, rs)
+                if action == "retry":
+                    phase = "fight"; continue
+                elif action == "equip":
+                    phase = "equip"; continue
+                else:  # flee → retour menu avec message
+                    _boss_mode_flee_screen()
+                    break
             continue
 
         xp_sys   = XPSystem()
@@ -1095,6 +1126,88 @@ def screen_title_with_boss_mode(screen, clock, fonts, save, boss_defs, current_b
 
     mode,diff,mtype=choice
     return mode=="auto", diff=="hardcore", current_bg, mtype
+
+
+def _boss_mode_flee_screen():
+    """Écran affiché quand le joueur fuit le combat de boss."""
+    F_BIG=FONTS["big"]; F_MED=FONTS["med"]; F_XSM=FONTS["xsm"]
+    snd.play_music("normal")
+    while True:
+        for ev in pygame.event.get():
+            if ev.type==pygame.QUIT: pygame.quit(); sys.exit()
+            if ev.type==pygame.KEYDOWN and ev.key in (pygame.K_RETURN,pygame.K_SPACE,pygame.K_ESCAPE):
+                return
+            if ev.type==pygame.MOUSEBUTTONDOWN:
+                return
+        tick=pygame.time.get_ticks()//16
+        screen.fill(BG); draw_bg(screen,tick,current_bg)
+        to=int(math.sin(tick*0.08)*4)
+        glow(screen,"LOSER",F_BIG,RED,(cx("LOSER",F_BIG)+1,H//2-80+to))
+        glow(screen,"LOSER",F_BIG,MAGENTA,(cx("LOSER",F_BIG),H//2-80))
+        msg="reviens quand tu seras plus fort"
+        screen.blit(F_MED.render(msg,True,WHITE),(cx(msg,F_MED),H//2+10))
+        pulse=int(200+55*math.sin(tick*0.09))
+        glow(screen,"[ ESPACE / clic ]  Retour au menu",F_XSM,(pulse,0,pulse),
+             (cx("[ ESPACE / clic ]  Retour au menu",F_XSM),H//2+90))
+        pygame.display.flip(); clock.tick(60)
+
+
+def _boss_mode_defeat_screen(boss_id:str, difficulty:str, score:int):
+    """Écran de défaite en MODE BOSS. Retourne 'retry', 'equip' ou 'flee'."""
+    F_BIG=FONTS["big"]; F_MED=FONTS["med"]; F_SM=FONTS["sm"]; F_XSM=FONTS["xsm"]
+    from entities.boss import BOSS_DEFS, DIFF_LABELS, DIFF_COLORS
+    info=BOSS_DEFS[boss_id]; dcol=DIFF_COLORS.get(difficulty,WHITE)
+
+    retry_btn = pygame.Rect(W//2-330,430,200,56)
+    equip_btn = pygame.Rect(W//2-100,430,200,56)
+    flee_btn  = pygame.Rect(W//2+130,430,200,56)
+
+    while True:
+        for ev in pygame.event.get():
+            if ev.type==pygame.QUIT: pygame.quit(); sys.exit()
+            if ev.type==pygame.KEYDOWN:
+                if ev.key==pygame.K_r: return "retry"
+                if ev.key==pygame.K_e: return "equip"
+                if ev.key in (pygame.K_f,pygame.K_ESCAPE): return "flee"
+            if ev.type==pygame.MOUSEBUTTONDOWN:
+                mx,my=pygame.mouse.get_pos()
+                if retry_btn.collidepoint(mx,my): return "retry"
+                if equip_btn.collidepoint(mx,my): return "equip"
+                if flee_btn.collidepoint(mx,my):  return "flee"
+
+        tick=pygame.time.get_ticks()//16
+        mx,my=pygame.mouse.get_pos()
+        screen.fill(BG); draw_bg(screen,tick,current_bg)
+
+        to=int(math.sin(tick*0.07)*3)
+        glow(screen,"VAINCU",F_BIG,RED,(cx("VAINCU",F_BIG)+1,80+to))
+        glow(screen,"VAINCU",F_BIG,MAGENTA,(cx("VAINCU",F_BIG),80))
+
+        sub=f"{info[0]}  [{DIFF_LABELS.get(difficulty,difficulty)}]"
+        screen.blit(F_MED.render(sub,True,dcol),(cx(sub,F_MED),190))
+        sc=f"Score : {score:07d}"
+        screen.blit(F_SM.render(sc,True,CYAN),(cx(sc,F_SM),240))
+
+        prompt="Que veux-tu faire ?"
+        screen.blit(F_SM.render(prompt,True,WHITE),(cx(prompt,F_SM),340))
+
+        for btn,lbl,col,hint,sub2 in [
+            (retry_btn,"⟳ RELANCER",CYAN,"[R]","mêmes conditions"),
+            (equip_btn,"⚙ ÉQUIPEMENT",GOLD,"[E]","ré-acheter avant"),
+            (flee_btn, "🏃 FUIR",MAGENTA,"[F]","retour au menu"),
+        ]:
+            hov=btn.collidepoint(mx,my)
+            bg=tuple(min(255,c//3+22) for c in col) if hov else (10,10,28)
+            pygame.draw.rect(screen,bg,btn,border_radius=10)
+            pygame.draw.rect(screen,col,btn,2,border_radius=10)
+            ls=F_SM.render(lbl,True,col)
+            screen.blit(ls,(btn.centerx-ls.get_width()//2,btn.y+8))
+            hs=F_XSM.render(hint,True,GREY)
+            screen.blit(hs,(btn.centerx-hs.get_width()//2,btn.y+30))
+            ss=F_XSM.render(sub2,True,GREY)
+            screen.blit(ss,(btn.centerx-ss.get_width()//2,btn.bottom+4))
+
+        pygame.display.flip(); clock.tick(60)
 
 
 def _boss_mode_result_screen(boss_id:str, difficulty:str, score:int):
