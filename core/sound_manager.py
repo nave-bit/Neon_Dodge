@@ -74,7 +74,9 @@ def list_game_music() -> list:
             if fn in seen: continue
             # Toute musique de jeu : music*.ogg/.mp3 (exclut shop/boss_fight)
             if (low.endswith((".ogg", ".mp3"))
-                    and low not in ("shop.ogg", "boss_fight.ogg")
+                    and low not in ("shop.ogg", "boss_fight.ogg",
+                                    "shop_village.ogg", "shop_mystic.ogg",
+                                    "boss_fight2.ogg")
                     and (low.startswith("music") or low.startswith("track"))):
                 label = _GAME_MUSIC_LABELS.get(fn, os.path.splitext(fn)[0].replace("_", " ").title())
                 found.append((fn, label)); seen.add(fn)
@@ -86,11 +88,15 @@ _SFX_FILES = {
     "teleport":    "teleport.wav",
     "levelup":     "levelup.wav",
     "boss":        "boss.wav",
+    "boss_killed": "boss_killed.wav",
     "boss_spawn":  "boss_spawn.wav",
     "boss_spawn2": "boss_spawn_laser2.wav",
     "buy_item":    "buy_item.wav",
     "laser":       "laser.wav",
     "game_end":    "game_end.wav",
+    "lose":        "lose.wav",
+    "click":       "click.wav",
+    "hover":       "button_hover.wav",
     # Sons générés synthétiquement si fichier absent
     "hit":      None,
     "collect":  None,
@@ -100,8 +106,8 @@ _SFX_FILES = {
 
 # Musiques de CONTEXTE (interrompent la musique de jeu)
 _CONTEXT_MUSIC = {
-    "boss":   "boss_fight.ogg",
-    "shop":   "shop.ogg",
+    "boss":   "boss_fight2.ogg",
+    "shop":   "shop_village.ogg",
 }
 
 # Musiques de JEU : détectées automatiquement (tout fichier music_*.ogg dans assets).
@@ -110,6 +116,7 @@ _GAME_MUSIC_LABELS = {
     "music_chill.ogg":  "Chill",
     "music_piano.ogg":  "Piano",
     "music_teckno.ogg": "Techno",
+    "music_run.ogg":    "Run",
     "music.ogg":        "Original",
 }
 
