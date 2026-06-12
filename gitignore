@@ -1,0 +1,12 @@
+# Fichiers temporaires Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Sauvegarde locale du jeu (scores, réglages)
+neon_save.json
+save/neon_save.json
+
+# Fichiers système
+.DS_Store
+Thumbs.db
