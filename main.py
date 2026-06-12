@@ -990,6 +990,7 @@ def main():
 
                 # Défaite → propose relancer / équipement / fuir
                 snd.stop_music()
+                snd.play("lose")
                 action = _boss_mode_defeat_screen(bid, bdiff, rs)
                 if action == "retry":
                     phase = "fight"; continue
@@ -1034,6 +1035,15 @@ def screen_title_with_boss_mode(screen, clock, fonts, save, boss_defs, current_b
     """Écran titre étendu avec bouton MODE BOSS."""
     F_BIG=fonts["big"]; F_MED=fonts["med"]; F_SM=fonts["sm"]; F_XSM=fonts["xsm"]
     choice=None
+    _hov={"i":-1}
+    # tous les rects cliquables du menu (pour le son de survol)
+    _menu_rects=[
+        pygame.Rect(W//2-310,340,140,52), pygame.Rect(W//2-150,340,140,52),
+        pygame.Rect(W//2+10,340,140,52),  pygame.Rect(W//2+170,340,140,52),
+        pygame.Rect(W//2-200,410,120,38), pygame.Rect(W//2-65,410,130,38),
+        pygame.Rect(W//2+80,410,120,38),  pygame.Rect(W//2-200,456,250,30),
+        pygame.Rect(W//2+50,456,150,30),  pygame.Rect(W//2-60,498,120,30),
+    ]
     while choice is None:
         for ev in pygame.event.get():
             if ev.type==pygame.QUIT: pygame.quit(); sys.exit()
@@ -1057,6 +1067,7 @@ def screen_title_with_boss_mode(screen, clock, fonts, save, boss_defs, current_b
                     current_bg=BACKGROUNDS[(BACKGROUNDS.index(current_bg)+1)%len(BACKGROUNDS)]
             if ev.type==pygame.MOUSEBUTTONDOWN:
                 mx,my=pygame.mouse.get_pos()
+                if any(r.collidepoint(mx,my) for r in _menu_rects): snd.play("click")
                 btns=[
                     (pygame.Rect(W//2-310,340,140,52),"auto",  "game"),
                     (pygame.Rect(W//2-150,340,140,52),"player","game"),
@@ -1087,6 +1098,7 @@ def screen_title_with_boss_mode(screen, clock, fonts, save, boss_defs, current_b
         glow(screen,"v5.0",F_XSM,GREY,(cx("v5.0",F_XSM),168))
 
         mx2,my2=pygame.mouse.get_pos()
+        _hover_sfx(_menu_rects, mx2, my2, _hov)
         btn_data=[
             (pygame.Rect(W//2-310,340,140,52),"🤖 IA AUTO", GREEN,  "game"),
             (pygame.Rect(W//2-150,340,140,52),"🎮 JOUEUR",  CYAN,   "game"),
@@ -1129,6 +1141,16 @@ def screen_title_with_boss_mode(screen, clock, fonts, save, boss_defs, current_b
     return mode=="auto", diff=="hardcore", current_bg, mtype
 
 
+def _hover_sfx(rects, mx, my, state):
+    """Joue 'hover' quand la souris entre sur un des rects. `state` = dict mutable {'i': index}."""
+    cur = -1
+    for i, r in enumerate(rects):
+        if r.collidepoint(mx, my): cur = i; break
+    if cur != state.get("i"):
+        if cur != -1: snd.play("hover")
+        state["i"] = cur
+
+
 def _boss_mode_flee_screen():
     """Écran affiché quand le joueur fuit le combat de boss."""
     F_BIG=FONTS["big"]; F_MED=FONTS["med"]; F_XSM=FONTS["xsm"]
@@ -1162,22 +1184,24 @@ def _boss_mode_defeat_screen(boss_id:str, difficulty:str, score:int):
     retry_btn = pygame.Rect(W//2-330,430,200,56)
     equip_btn = pygame.Rect(W//2-100,430,200,56)
     flee_btn  = pygame.Rect(W//2+130,430,200,56)
+    _hov = {"i": -1}
 
     while True:
         for ev in pygame.event.get():
             if ev.type==pygame.QUIT: pygame.quit(); sys.exit()
             if ev.type==pygame.KEYDOWN:
-                if ev.key==pygame.K_r: return "retry"
-                if ev.key==pygame.K_e: return "equip"
-                if ev.key in (pygame.K_f,pygame.K_ESCAPE): return "flee"
+                if ev.key==pygame.K_r: snd.play("click"); return "retry"
+                if ev.key==pygame.K_e: snd.play("click"); return "equip"
+                if ev.key in (pygame.K_f,pygame.K_ESCAPE): snd.play("click"); return "flee"
             if ev.type==pygame.MOUSEBUTTONDOWN:
                 mx,my=pygame.mouse.get_pos()
-                if retry_btn.collidepoint(mx,my): return "retry"
-                if equip_btn.collidepoint(mx,my): return "equip"
-                if flee_btn.collidepoint(mx,my):  return "flee"
+                if retry_btn.collidepoint(mx,my): snd.play("click"); return "retry"
+                if equip_btn.collidepoint(mx,my): snd.play("click"); return "equip"
+                if flee_btn.collidepoint(mx,my):  snd.play("click"); return "flee"
 
         tick=pygame.time.get_ticks()//16
         mx,my=pygame.mouse.get_pos()
+        _hover_sfx([retry_btn,equip_btn,flee_btn], mx, my, _hov)
         screen.fill(BG); draw_bg(screen,tick,current_bg)
 
         to=int(math.sin(tick*0.07)*3)
